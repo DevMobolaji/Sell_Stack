@@ -1,11 +1,11 @@
 import User from "@/domain/auth/auth.model"
-import { Resolver } from "@/graphql/utils/graphqlWrapper"
+import { resolverMap } from "@/graphql/utils/graphqlWrapper"
 
 
-export const resolvers: Resolver = {
+export const resolvers: resolverMap= {
     Query: {
         user: () => {
             return User
+        }
     }
-  }
 }
