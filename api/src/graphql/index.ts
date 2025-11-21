@@ -1,3 +1,4 @@
+import { ErrorHandlingPlugin } from "@/core/errors/GraphqlError/errorPlugin";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from '@as-integrations/express5';
 import { loadFiles } from "@graphql-tools/load-files";
@@ -37,6 +38,7 @@ const createGraphQLServer = async () => {
 
   const server = new ApolloServer({
     schema,
+    plugins: [ErrorHandlingPlugin()],
     introspection: !isProduction,
     // max depth allowed
     formatError: () => {}
@@ -49,6 +51,7 @@ const createGraphQLServer = async () => {
         {
         req,
         res,
+        requestId: (req as any).requestId,
         // redis,
         }
     )
