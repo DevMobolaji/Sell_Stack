@@ -1,16 +1,23 @@
 import { ApolloServerPlugin, GraphQLRequestContext } from '@apollo/server';
-import { logger } from '../../infra/logger';
-import { formatGraphQLError } from '../formatError';
+// import { logger } from '../../infra/logger';
+import formatGraphQLError from './formatError';
 import { GraphQLError } from 'graphql/error';
-import { AppError } from '../../errors/AppError';
+import AppError from './AppError';
+
+type GraphQLCtx = {
+  req: Request;
+  res: Response;
+  correlationId?: string;
+  requestId: string;
+};
 
 export const ErrorHandlingPlugin = (): ApolloServerPlugin => {
   return {
     async requestDidStart(): Promise<any> {
       return {
-        didEncounterErrors(requestContext: GraphQLRequestContext) {
+        didEncounterErrors(requestContext: GraphQLRequestContext<GraphQLCtx>) {
           const { errors, request } = requestContext;
-          const ctx = requestContext.context as any;
+          const ctx = requestContext.contextValue;
           const requestId = ctx?.requestId;
 
           // Log each error in structured form (with original stack)
@@ -28,11 +35,13 @@ export const ErrorHandlingPlugin = (): ApolloServerPlugin => {
           }
         },
 
-        async willSendResponse(requestContext: GraphQLRequestContext) {
-          const ctx = requestContext.context as any;
+        async willSendResponse(requestContext: GraphQLRequestContext<GraphQLCtx>) {
+          const ctx = requestContext.contextValue as any;
           const requestId = ctx?.requestId;
           const env = process.env.NODE_ENV || 'production';
 
+
+          //ERROR 
           // Format all errors for the client and attach requestId
           if (requestContext.response?.errors?.length) {
             requestContext.response.errors = requestContext.response.errors.map((err: GraphQLError) =>

@@ -4,6 +4,9 @@ import errorMiddleware from "@/app/middleware/restMiddleware/errorMiddleware";
 //import { morganMiddleware } from "@/configs/logger";
 //import  DbConn from "@/configs/DbConn";
 import createGraphQLServer from "@/graphql/index";
+import correlationIdMiddleware from "@/config/correlationId";
+import { httpLogger } from "./logging/httplogger";
+import graphqlHttpStatus from "@/graphql/utils/graphqlHttpStatus";
 
 //import { encryptSecret, decryptSecret } from "@/helpers/crypto.helper"
 
@@ -26,9 +29,11 @@ class App {
     //MIDDLEWARE INITIALIZERS
      private async initializeMiddleware(): Promise<void> {
         this.express.use(express.json());
+        this.express.use(correlationIdMiddleware)
         //this.express.use(morganMiddleware);  
         // Apply middleware at the top
-        app.use(httpLogger); 
+        this.express.use(httpLogger); 
+        this.express.use(graphqlHttpStatus);
     }
 
 

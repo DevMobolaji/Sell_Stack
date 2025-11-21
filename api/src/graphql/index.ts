@@ -47,11 +47,10 @@ const createGraphQLServer = async () => {
   await server.start();
 
   return expressMiddleware(server, {
-    context: async ({ req, res }: { req: Request; res: Response }) => (
+    context: async ({ req, res }) => (
         {
-        req,
-        res,
         requestId: (req as any).requestId,
+        correlationId: req.correlationId,
         // redis,
         }
     )

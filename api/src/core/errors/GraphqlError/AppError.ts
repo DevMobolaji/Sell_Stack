@@ -16,9 +16,9 @@ export default class AppError extends Error {
     this.httpStatus = httpStatus;
     this.details = details;
 
-    // preserve stack trace (V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
+    // // preserve stack trace (V8)
+    // if (Error.captureStackTrace) {
+    //   Error.captureStackTrace(this, this.constructor);
+    // }
   }
 }

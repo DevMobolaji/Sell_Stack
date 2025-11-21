@@ -1,51 +1,74 @@
-import { GraphQLError } from 'graphql/error';
+import { GraphQLError, GraphQLFormattedError } from "graphql/error";
+import AppError from "./AppError";
 
-import AppError from './AppError';
+const isDev = process.env.NODE_ENV === 'development';
 
-const safeMessage = (err: GraphQLError) => {
-  if (err.originalError instanceof AppError) return err.originalError.message;
-  return 'Internal server error';
-};
+async function formatGraphQLError( formattedError: GraphQLFormattedError,
+  error: GraphQLError) {
+  const correlationId = error?.extensions?.correlationId;
 
-export function formatGraphQLError(err: GraphQLError, options?: { requestId?: string, env?: string }) {
-  const env = options?.env ?? process.env.NODE_ENV;
-  const requestId = options?.requestId;
+  // logger.error('GraphQL Error', {
+  //   message: error.message,
+  //   stack: error.stack,
+  //   path: formattedError.path,
+  //   correlationId,
+  //   extensions: error.extensions
+  // });
 
-  if (err.originalError instanceof AppError) {
-    const appErr = err.originalError as AppError;
+  // For AppError instances
+  if (error.originalError instanceof AppError) {
+    const err = error.originalError;
+
+
     return {
-      message: appErr.message,
+      message: error.message,
       extensions: {
-        code: appErr.code,
-        httpStatus: appErr.httpStatus,
-        details: appErr.details ?? null,
-        requestId,
-      },
+        code: err.code,
+        httpStatus: err.httpStatus,
+        details: err.details,
+        correlationId,
+        timestamp: new Date().toISOString()
+      }
     };
   }
 
-  // GraphQL parse/validation / other GraphQLErrors
-  const extCode = err.extensions?.code ?? 'INTERNAL_SERVER_ERROR';
-  if (extCode === 'GRAPHQL_VALIDATION_FAILED' || extCode === 'GRAPHQL_PARSE_FAILED' || extCode === 'BAD_USER_INPUT') {
+  // GraphQL validation errors
+  if (formattedError.extensions?.code === 'GRAPHQL_VALIDATION_FAILED') {
     return {
-      message: err.message,
+      message: 'Invalid GraphQL query',
       extensions: {
         code: 'BAD_REQUEST',
         httpStatus: 400,
-        details: err.extensions ?? null,
-        requestId,
-      },
+        correlationId,
+        timestamp: new Date().toISOString()
+      }
     };
   }
 
-  // Unknown/internal errors: mask in prod, include stack in dev (but still log full)
+  // Parse errors
+  if (formattedError.extensions?.code === 'GRAPHQL_PARSE_FAILED') {
+    return {
+      message: 'Invalid GraphQL syntax',
+      extensions: {
+        code: 'BAD_REQUEST',
+        httpStatus: 400,
+        correlationId,
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+
+  // Unknown error (mask)
   return {
-    message: env === 'development' ? err.message : 'Internal server error',
+    message: isDev ? error.message : 'Internal server error',
     extensions: {
       code: 'INTERNAL_SERVER_ERROR',
       httpStatus: 500,
-      requestId,
-      ...(env === 'development' ? { stack: (err.extensions?.exception as any)?.stacktrace ?? err.stack } : {}),
-    },
+      correlationId,
+      ...(isDev && { stack: error.stack }),
+      timestamp: new Date().toISOString()
+    }
   };
 }
+
+export default formatGraphQLError;

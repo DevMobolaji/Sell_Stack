@@ -1,6 +1,7 @@
 const { v4: uuid } = require('uuid');
+import { NextFunction, Request, Response } from "express"
 
-module.exports = function correlationIdMiddleware(req, res, next) {
+function correlationIdMiddleware(req: Request, res: Response, next: NextFunction) {
   const id = req.headers['x-correlation-id'] || uuid();
 
   req.correlationId = id;
@@ -10,3 +11,5 @@ module.exports = function correlationIdMiddleware(req, res, next) {
 
   next();
 };
+
+export default correlationIdMiddleware;

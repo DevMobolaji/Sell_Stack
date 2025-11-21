@@ -1,4 +1,4 @@
-import { AppError } from './AppError';
+import AppError from './AppError';
 import { ERROR_CODES } from './errorCodes';
 import statusCode from "http-status-codes";
 
