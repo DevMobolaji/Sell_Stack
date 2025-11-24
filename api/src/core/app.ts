@@ -1,74 +1,83 @@
-import express, { Application } from "express";
-import Controller from "@/interfaces/controller.interface";
-import errorMiddleware from "@/app/middleware/restMiddleware/errorMiddleware";
-//import { morganMiddleware } from "@/configs/logger";
-//import  DbConn from "@/configs/DbConn";
-import createGraphQLServer from "@/graphql/index";
-import correlationIdMiddleware from "@/config/correlationId";
-import { httpLogger } from "./logging/httplogger";
-import graphqlHttpStatus from "@/graphql/utils/graphqlHttpStatus";
+import express, { Application } from 'express';
+import Controller from '@/interfaces/controller.interface';
+import { httpLogger } from './logging/httplogger';
 
-//import { encryptSecret, decryptSecret } from "@/helpers/crypto.helper"
+import { finalErrorHandler } from './errors/errorHandler';
+import createGraphQLServer from '../graphql';
+import graphqlHttpStatus from '@/graphql/utils/graphqlHttpStatus';
+import { requestLoggerMiddleware } from '@/app/middleware/requestLogger';
 
 class App {
-    public express: Application;
-    public port: number; 
-    
-    constructor (public controllers: Controller[], port: number) {
-        this.express = express();
-        this.port = port;
+  public express: Application;
+  public port: number;
 
-        this.initializeMiddleware();
-        this.initializeRoutes(controllers);
-        this.initializeGraphql()
-        this.initializeErrorMiddleware();
-        
-    }
+  constructor(public controllers: Controller[], port: number) {
+    this.express = express();
+    this.port = port;
 
+    this.initializeMiddleware();
+    this.initializeRoutes(controllers);
+    this.initializeGraphql();
+    this.initializeErrorMiddleware();
+  }
 
-    //MIDDLEWARE INITIALIZERS
-     private async initializeMiddleware(): Promise<void> {
-        this.express.use(express.json());
-        this.express.use(correlationIdMiddleware)
-        //this.express.use(morganMiddleware);  
-        // Apply middleware at the top
-        this.express.use(httpLogger); 
-        this.express.use(graphqlHttpStatus);
-    }
+  // ===============================
+  // MIDDLEWARE INITIALIZERS
+  // ===============================
+  private initializeMiddleware(): void {
+    // Parse JSON bodies
+    this.express.use(express.json());
 
+    // Request logger (logs request start)
+    this.express.use(requestLoggerMiddleware);
 
-    //ROUTE INITIALIZERS
-    private initializeRoutes(controllers: Controller[]): void {
-        controllers.forEach((controller) => {
-            this.express.use("/api/V1", controller.route);
-        });
-    }
+    // HTTP logger (logs response finish)
+    this.express.use(httpLogger);
 
-    private async initializeGraphql(): Promise<void> {
-        const graphqlServer = await createGraphQLServer();
-        this.express.use("/graphql", graphqlServer);
-    }
+    // Optional GraphQL HTTP status logging
+    this.express.use(graphqlHttpStatus);
+  }
 
+  // ===============================
+  // ROUTE INITIALIZERS
+  // ===============================
+  private initializeRoutes(controllers: Controller[]): void {
+    controllers.forEach(controller => {
+      this.express.use('/api/V1', controller.route);
+    });
+  }
 
-    //ERROR MIDDLEWARE INITIALIZER
-    private initializeErrorMiddleware(): void {
-        this.express.use(errorMiddleware);
-    }
+  // ===============================
+  // GRAPHQL INITIALIZER
+  // ===============================
+  private async initializeGraphql(): Promise<void> {
+    const graphqlServer = await createGraphQLServer();
+    this.express.use('/graphql', graphqlServer);
+  }
 
-    //DB CONNECTION INITIALIZER
-    public async initializeDbConnection(): Promise<void> {
-        // Database connection logic here
-        //await DbConn()
-    }
-    
+  // ===============================
+  // ERROR MIDDLEWARE INITIALIZER
+  // ===============================
+  private initializeErrorMiddleware(): void {
+    // Catch-all error handlers
+    this.express.use(finalErrorHandler);
+  }
 
-    //SERVER LISTENER
-    public listen(): void {
-        this.express.listen(this.port, () => {
-            console.log(`🚀 Server running on port ${this.port}`);
-        });
-    }
+  // ===============================
+  // DB CONNECTION PLACEHOLDER
+  // ===============================
+  public async initializeDbConnection(): Promise<void> {
+    // await DbConn(); // implement your DB connection logic here
+  }
+
+  // ===============================
+  // SERVER LISTENER
+  // ===============================
+  public listen(): void {
+    this.express.listen(this.port, () => {
+      console.log(`🚀 Server running on port ${this.port}`);
+    });
+  }
 }
 
-
-export default App; 
+export default App;

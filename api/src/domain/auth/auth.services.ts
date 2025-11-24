@@ -1,5 +1,5 @@
 import User from "domain/auth/auth.model"
-import HttpException from "@/core/errors/restFulError/http.exception";
+import HttpException from "@/core/errors/http.exception";
 import AuditLogger  from "domain/audit/audit.service";
 import { hashedPassword, verifyPassword } from "@/config/password";
 

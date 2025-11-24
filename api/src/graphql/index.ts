@@ -1,13 +1,13 @@
-import { ErrorHandlingPlugin } from "@/core/errors/GraphqlError/errorPlugin";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from '@as-integrations/express5';
 import { loadFiles } from "@graphql-tools/load-files";
 import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";
-import { Request, Response } from "express";
 import path from "path";
 
 import { RedisClientType } from "redis"; // example
+import { StatusAndCorrelationPlugin } from "./statusPlugin";
+import { buildGraphQLContext } from "./utils/context";
 //import { getRedisClient } from "../shared/cache/redisClient";
 //import { verifyAccessToken } from "../shared/auth/jwt";
 // 
@@ -38,7 +38,7 @@ const createGraphQLServer = async () => {
 
   const server = new ApolloServer({
     schema,
-    plugins: [ErrorHandlingPlugin()],
+    plugins: [StatusAndCorrelationPlugin()],
     introspection: !isProduction,
     // max depth allowed
     formatError: () => {}
@@ -47,14 +47,8 @@ const createGraphQLServer = async () => {
   await server.start();
 
   return expressMiddleware(server, {
-    context: async ({ req, res }) => (
-        {
-        requestId: (req as any).requestId,
-        correlationId: req.correlationId,
-        // redis,
-        }
-    )
-})
+    context: async ({ req, res }) => buildGraphQLContext({ req, res })
+  })
 }
 
 export default createGraphQLServer;

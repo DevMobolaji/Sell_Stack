@@ -1,8 +1,13 @@
-// src/types/express.d.ts
-import 'express-serve-static-core';
+import User from '@/domain/auth/auth.interface';
+import { Request } from 'express';
+import { Logger } from 'winston';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    correlationId?: string;
+declare global {
+  namespace Express {
+    interface Request {
+      correlationId?: string;
+      logger?: Logger;
+      user: User | null
+    }
   }
 }
